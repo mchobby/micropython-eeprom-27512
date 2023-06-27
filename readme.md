@@ -55,11 +55,11 @@ I did used a simplified schematic to breadboard it! As it only does reading this
 
 ![PROGRAMMER-GLS27SF512-eeprom-read](docs/_static/PROGRAMMER-GLS27SF512-eeprom-read.jpg)
 
-The example [read_epprom.py](examples/read_epprom.py) just read the 64K eeprom content and display it on the REPL output.
-
-Which does look like the following with the EEPROM to read at bottom-right.
+Which does look like the following with the EEPROM to read at bottom-right of my breadboard.
 
 ![PROGRAMMER GLS27SF512 breadboard](docs/_static/PROGRAMMER-GLS27SF512-eeprom-read-breadboard.jpg)
+
+The example [read_epprom.py](examples/read_epprom.py) just read the 64K eeprom content and display it on the REPL output.
 
 See the variable `start_addr` and `end_addr` in the script [read_epprom.py](examples/read_epprom.py) to modify the range of reading
 
@@ -72,10 +72,9 @@ When running the script, we got the following on the REPL session (partial resul
 
 ![Partial ROM content](docs/_static/rom-content.jpg)
 
-Surprisingly the ROM contains some speech data!
+Surprisingly the ROM from 1991 does contains some speech data!
 
 ![Partial ROM content](docs/_static/rom-text.jpg)
-
 
 The full content is made available in the [examples/ROM1.txt](examples/ROM1.txt) file (~380 Kio).
 
