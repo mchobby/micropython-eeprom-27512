@@ -1,4 +1,4 @@
-# 25C512 EEProm programmer with MicroPython
+# 27C512 EEProm programmer with MicroPython
 
 ## Abstract
 A while ago I did start a project to convert a DTMF Central processor board (Z80 based) to something usable in retro-programming.
