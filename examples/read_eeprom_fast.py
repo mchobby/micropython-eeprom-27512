@@ -7,9 +7,11 @@
 	  d2 a0 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
 	  two first bytes are the address MSBF.
 
-	Try to reduce the execution time by avoiding memory allocation.
+	Try to reduce the execution time by avoiding memory allocation, calls, etc
 	- optimised sn74hc595 lib : 126 sec --(down to)--> 96 sec (for 64 Kio)
 	- bytearray instead of list: 96 sec --(down to)--> 69 sec
+	- Read with mem32:           69 sec --(down to)--> 61 sec
+	- avoids data.value call:    61 sec --(down to)--> 59 sec
 
 Author(s):
 * Meurisse D for MC Hobby sprl
@@ -17,10 +19,14 @@ Author(s):
 See Github: https://github.com/mchobby/esp8266-upy/tree/master/74hc595
 """
 
-from machine import Pin, Signal
+from machine import Pin, Signal, mem32
 from sn74hc595 import ShiftReg
 import time
 import binascii
+
+SIO_BASE = 0xd0000000
+GPIO_IN  = SIO_BASE + 0x004
+
 
 # Note that signal is inverted by a 2N7002
 oe = Pin(17, Pin.OUT, False )
@@ -46,11 +52,15 @@ class DataIO:
 	@property
 	def value( self ):
 		assert self.mode == Pin.IN
+		# _r = 0
+		# for i in range( 8 ):
+		#	_r +=  (self.bits[i].value() * (1<<i))
+		# print( _r, val)
+		# return _r
+
 		# https://forums.raspberrypi.com/viewtopic.php?t=311660
-		_r = 0
-		for i in range( 8 ):
-			_r +=  (self.bits[i].value() * (1<<i))
-		return _r
+		# Peek32
+		return (mem32[GPIO_IN]>>6) & 0xFF
 
 	@value.setter
 	def value( self, value ):
@@ -97,8 +107,11 @@ while _addr <= end_addr:
 		# _l.clear()
 		# _ascii.clear()
 
-	#_val = data.value
-	arr[(_addr % 16) +2 ] = data.value
+	# Using bytearray for storage
+	#  _val = data.value
+	# Avoids function call
+	#   arr[(_addr % 16) +2 ] = data.value
+	arr[(_addr % 16) +2 ] = (mem32[GPIO_IN]>>6) & 0xFF
 	#_l.append( "%02X" % _val )
 	#_ascii.append( "%c" % _val if 32<=_val<=126 else "." )
 	_addr += 1
