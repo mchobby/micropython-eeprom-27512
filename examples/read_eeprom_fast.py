@@ -3,7 +3,13 @@
 	16 bits counter. Use write word to count from 0 to 65535.
 	Write word respect the MSBF (higher bit to the left).
 
-	Execution time is about 96 seconds for 64 Kio.
+	New format is:
+	  d2 a0 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+	  two first bytes are the address MSBF.
+
+	Try to reduce the execution time by avoiding memory allocation.
+	- optimised sn74hc595 lib : 126 sec --(down to)--> 96 sec (for 64 Kio)
+	- bytearray instead of list: 96 sec --(down to)--> 69 sec
 
 Author(s):
 * Meurisse D for MC Hobby sprl
@@ -14,6 +20,7 @@ See Github: https://github.com/mchobby/esp8266-upy/tree/master/74hc595
 from machine import Pin, Signal
 from sn74hc595 import ShiftReg
 import time
+import binascii
 
 # Note that signal is inverted by a 2N7002
 oe = Pin(17, Pin.OUT, False )
@@ -39,6 +46,7 @@ class DataIO:
 	@property
 	def value( self ):
 		assert self.mode == Pin.IN
+		# https://forums.raspberrypi.com/viewtopic.php?t=311660
 		_r = 0
 		for i in range( 8 ):
 			_r +=  (self.bits[i].value() * (1<<i))
@@ -61,31 +69,45 @@ ce.value( True ) # Only required when CE is wired)
 start_addr = 0x0000
 end_addr   = 0xFFFF
 
+assert (start_addr % 16)==0, "Start address must be multiple of 16 bytes."
+assert ((end_addr+1) % 16)==0, "End address must be in range of 16 bytes."
+
 _addr = start_addr # Current address
-_s = ""
-_l = [] # Formatted Hex representation of data (2 hex digit each)
-_ascii = [] # Ascci representatino of the data
+#_s = ""
+# _l = [] # Formatted Hex representation of data (2 hex digit each)
+# _ascii = [] # Ascci representatino of the data
+
+arr = bytearray(18) # two first bytes is the address
 t1 = time.time()
 while _addr <= end_addr:
 	addr.write_word( _addr )
 	if (_addr % 16)==0:
+		# Eject current line
+		if _addr > start_addr:
+			print( binascii.hexlify(arr," ").decode('UTF8') )
+		# prepare next line
+		arr[0] = _addr >> 8
+		arr[1] = _addr & 0xFF
+
 		# Eject line to output
 		#if len( _l )>0 :
 		#	print( _s + " ".join( _l ) + " : "+"".join(_ascii)  )
 		# Prepare the next line
-		_s = "0x%04X : " % _addr
-		_l.clear()
-		_ascii.clear()
+		# _s = "0x%04X : " % _addr
+		# _l.clear()
+		# _ascii.clear()
 
-	_val = data.value
-	_l.append( "%02X" % _val )
-	_ascii.append( "%c" % _val if 32<=_val<=126 else "." )
+	#_val = data.value
+	arr[(_addr % 16) +2 ] = data.value
+	#_l.append( "%02X" % _val )
+	#_ascii.append( "%c" % _val if 32<=_val<=126 else "." )
 	_addr += 1
 
 
 # Eject last line if any
-if len( _l )>0 :
-	print( _s + " ".join( _l ) + " : "+"".join(_ascii) )
+#if len( _l )>0 :
+#	print( _s + " ".join( _l ) + " : "+"".join(_ascii) )
+print( binascii.hexlify(arr," ").decode('UTF8') )
 
 oe.value( False )
 t2 = time.time()
