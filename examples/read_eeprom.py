@@ -70,8 +70,8 @@ while _addr <= end_addr:
 	addr.write_word( _addr )
 	if (_addr % 16)==0:
 		# Eject line to output
-		#if len( _l )>0 :
-		#	print( _s + " ".join( _l ) + " : "+"".join(_ascii)  )
+		if len( _l )>0 :
+			print( _s + " ".join( _l ) + " : "+"".join(_ascii)  )
 		# Prepare the next line
 		_s = "0x%04X : " % _addr
 		_l.clear()
@@ -89,4 +89,4 @@ if len( _l )>0 :
 
 oe.value( False )
 t2 = time.time()
-print( t2-t1, "seconds" )
+# print( t2-t1, "seconds" )
