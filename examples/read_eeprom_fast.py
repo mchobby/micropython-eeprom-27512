@@ -16,7 +16,7 @@
 Author(s):
 * Meurisse D for MC Hobby sprl
 
-See Github: https://github.com/mchobby/esp8266-upy/tree/master/74hc595
+See Github: https://github.com/mchobby/micropython-eeprom-27512
 """
 
 from machine import Pin, Signal, mem32

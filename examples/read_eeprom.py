@@ -8,51 +8,25 @@
 Author(s):
 * Meurisse D for MC Hobby sprl
 
-See Github: https://github.com/mchobby/esp8266-upy/tree/master/74hc595
+See Github: https://github.com/mchobby/micropython-eeprom-27512
 """
 
-from machine import Pin, Signal
-from sn74hc595 import ShiftReg
+from machine import Pin, mem32
+from busaddr import BusAddr
+from busdata import BusData
 import time
 
+read_led = Pin( 2, Pin.OUT, False )
 # Note that signal is inverted by a 2N7002
 oe = Pin(17, Pin.OUT, False )
 ce = Pin(16, Pin.OUT, False )
-
-class DataIO:
-	def __init__( self, pins ): # 8 data pins LSBF
-		assert len(pins)==8, "Must have 8 bits!"
-		self.bits = pins
-		self.mode = None
-		# configure as input
-		self.config( Pin.IN )
-
-	def config( self, mode ):
-		assert mode in (Pin.IN, Pin.OUT ), "Only IN or OUT allowed"
-		self.mode = mode
-		for p in self.bits:
-			if mode == Pin.OUT:
-				p.init( mode, value=False )
-			else:
-				p.init( mode )
-
-	@property
-	def value( self ):
-		assert self.mode == Pin.IN
-		_r = 0
-		for i in range( 8 ):
-			_r +=  (self.bits[i].value() * (1<<i))
-		return _r
-
-	@value.setter
-	def value( self, value ):
-		assert self.mode == Pin.OUT
-		for i in range( 8 ):
-			self.bits[i].value( (value & (1<<i)) )
+# Disable programming Mode (for sure)
+a9_prog = Pin(14, Pin.OUT, False) # Set High for Prog mode (see datasheet)
+oe_prog = Pin(15, Pin.OUT, False) # Set High for Prog mode (see datasheet)
 
 
-data = DataIO( [Pin(6),Pin(7),Pin(8),Pin(9),Pin(10),Pin(11),Pin(12),Pin(13)] )
-addr = ShiftReg( Pin(20), Pin(21), Pin(19), Pin(18)  )
+data = BusData( [Pin(6),Pin(7),Pin(8),Pin(9),Pin(10),Pin(11),Pin(12),Pin(13)] )
+addr = BusAddr( Pin(20), Pin(21), Pin(19), Pin(18)  )
 
 data.config( Pin.IN ) # Read mode
 oe.value( True ) # Activates EEPROM
@@ -61,6 +35,7 @@ ce.value( True ) # Only required when CE is wired)
 start_addr = 0x0000
 end_addr   = 0xFFFF
 
+read_led.on()
 _addr = start_addr # Current address
 _s = ""
 _l = [] # Formatted Hex representation of data (2 hex digit each)
@@ -68,6 +43,8 @@ _ascii = [] # Ascci representatino of the data
 t1 = time.time()
 while _addr <= end_addr:
 	addr.write_word( _addr )
+	if (_addr % 256)==0:
+		read_led.toggle()
 	if (_addr % 16)==0:
 		# Eject line to output
 		if len( _l )>0 :
@@ -88,5 +65,6 @@ if len( _l )>0 :
 	print( _s + " ".join( _l ) + " : "+"".join(_ascii) )
 
 oe.value( False )
+read_led.off()
 t2 = time.time()
 # print( t2-t1, "seconds" )
